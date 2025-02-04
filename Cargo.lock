@@ -2633,6 +2633,7 @@ name = "microgames"
 version = "0.0.0"
 dependencies = [
  "bevy",
+ "blake3",
  "spritehouse_engine",
 ]
 

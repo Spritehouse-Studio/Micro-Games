@@ -9,10 +9,7 @@ on:
 jobs:
   test:
     name: Run tests
-    strategy:
-      matrix:
-        runner: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,7 +19,6 @@ jobs:
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install Bevy dependencies
-        if: ${{ matrix.runner == 'ubuntu-latest' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev libxkbcommon-dev
@@ -54,14 +50,12 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        target: [
+        os: [
           { runner: ubuntu-latest, suffix: linux }, 
           { runner: macos-latest, suffix: macos },
           { runner: windows-latest, suffix: windows }
         ]
-    runs-on: ${{ matrix.target.runner }}
-    env:
-      game_slug: ${{ needs.get-metadata.outputs.game_name }}_${{ needs.get-metadata.outputs.version }}_${{ matrix.target.suffix }}
+    runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -70,36 +64,62 @@ jobs:
           token: ${{ secrets.CHECKOUT_TOKEN }}
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Install Bevy dependencies
-        if: ${{ matrix.target.suffix == 'linux' }}
+      - name: Install Bevy dependencies (Linux)
+        if: ${{ matrix.os.suffix == 'linux' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev libxkbcommon-dev
+      - name: Install Bevy dependencies (macOS)
+        if: ${{ matrix.os.suffix == 'macos' }}
+        run: xcode-select --install
       - name: Build game
         run: cargo build --release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts_${{ matrix.os.suffix }}
+          path: target/release/${{ needs.get-metadata.outputs.game_name }}*
+  bundle:
+    name: Bundle executable
+    needs: 
+      - build
+      - get-metadata
+    strategy:
+      matrix:
+        suffix: [linux, macos, windows]
+    runs-on: ubuntu-latest
+    env:
+      game_slug: ${{ needs.get-metadata.outputs.game_name }}_${{ needs.get-metadata.outputs.version }}_${{ matrix.suffix }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts_${{ matrix.suffix }}
+          path: ./
       - name: Zip build
         run: |
           cd target/release
           zip ${{ env.game_slug }}.zip $(find . -type f -name "${{ needs.get-metadata.outputs.game_name }}*" | grep -P "^\.\/${{ needs.get-metadata.outputs.game_name }}(\.(exe|x86_64))?$")
-      - name: Upload library artifact
+      - name: Upload bundled artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.game_slug }}
           path: target/release/${{ env.game_slug }}.zip
   deploy:
+    name: Deploy game to Itch
     needs: 
       - get-metadata
-      - build
+      - bundle
     strategy:
       matrix:
-        target: [
+        os: [
           { suffix: linux, channel: linux }, 
           { suffix: macos, channel: osx },
           { suffix: windows, channel: windows }
         ]
     runs-on: ubuntu-latest
     env:
-      game_slug: ${{ needs.get-metadata.outputs.game_name }}-${{ needs.get-metadata.outputs.version }}-${{ matrix.target.suffix }}
+      game_slug: ${{ needs.get-metadata.outputs.game_name }}_${{ needs.get-metadata.outputs.version }}_${{ matrix.os.suffix }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
