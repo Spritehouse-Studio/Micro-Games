@@ -1,0 +1,55 @@
+[package]
+name = "microgames"
+authors = ["jngo@spritehouse.com"]
+description = "Game to test the capabilities of the Spritehouse Engine."
+version = "0.0.0"
+edition = "2021"
+categories = ["game"]
+keywords = ["game", "spritehouse", "bevy", "bevy-engine"]
+
+[dependencies]
+bevy = { version = "^0.15", default-features = false, features = [
+  "bevy_animation",
+  "bevy_asset",
+  "bevy_audio",
+  "bevy_ci_testing",
+  "bevy_color",
+  "bevy_core_pipeline",
+  "bevy_dev_tools",
+  "bevy_gilrs",
+  "bevy_gizmos",
+  "bevy_picking",
+  "bevy_render",
+  "bevy_scene",
+  "bevy_sprite",
+  "bevy_sprite_picking_backend",
+  "bevy_state",
+  "bevy_text",
+  "bevy_ui",
+  "bevy_ui_picking_backend",
+  "bevy_window",
+  "bevy_winit",
+  "custom_cursor",
+  "default_font",
+  "multi_threaded",
+  "file_watcher",
+  "mp3",
+  "png",
+  "serialize",
+  "trace",
+  "wav",
+  "wayland",
+  "x11",
+] }
+spritehouse_engine = { path = "spritehouse_engine" }
+
+[profile.release]
+codegen-units = 1
+debug = false
+debug-assertions = false
+incremental = false
+lto = true
+opt-level = "z"
+overflow-checks = false
+panic = "unwind"
+strip = true

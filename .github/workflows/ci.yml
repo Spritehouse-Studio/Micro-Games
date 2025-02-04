@@ -1,0 +1,104 @@
+name: Test, Build, and Deply
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    name: Run tests
+    strategy:
+      matrix:
+        runner: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install Bevy dependencies
+        if: ${{ matrix.runner == 'ubuntu-latest' }}
+        run: sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev libxkbcommon-dev
+      - name: Run tests
+        run: cargo test --all-features
+  get-metadata:
+    name: Get metadata
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      game_name: ${{ steps.get_name.outputs.name }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Get game name
+        id: get_name
+        run: |
+          query="^name = "
+          echo "name=$(grep "$query" Cargo.toml | sed --regexp-extended "s,$query|\",,g")" >> $GITHUB_OUTPUT
+      - name: Get version
+        id: get_version
+        run: |
+          query="^version = "
+          echo "version=$(grep "$query" Cargo.toml | sed --regexp-extended "s,$query|\",,g")" >> $GITHUB_OUTPUT
+  build:
+    name: Build game
+    needs: get-metadata
+    permissions: write-all
+    strategy:
+      matrix:
+        target: [
+          { runner: ubuntu-latest, suffix: linux }, 
+          { runner: macos-latest, suffix: macos },
+          { runner: windows-latest, suffix: windows }
+        ]
+    runs-on: ${{ matrix.target.runner }}
+    env:
+      game_slug: ${{ needs.get-metadata.outputs.game_name }}-${{ needs.get-metadata.outputs.version }}-${{ matrix.target.suffix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install Bevy dependencies
+        if: ${{ matrix.target.suffix == 'linux' }}
+        run: sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev libxkbcommon-dev
+      - name: Build game
+        run: cargo build --release
+      - name: Zip build
+        run: zip ${{ env.game_slug }}.zip target\/release\/${{ needs.get-metadata.outputs.game_name }}(\.(exe|x86_64))?
+      - name: Upload library artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.game_slug }}
+          path: ${{ env.game_slug }}.zip
+  deploy:
+    needs: 
+      - get-metadata
+      - build
+    strategy:
+      matrix:
+        target: [
+          { suffix: linux, channel: linux }, 
+          { suffix: macos, channel: osx },
+          { suffix: windows, channel: windows }
+        ]
+    runs-on: ubuntu-latest
+    env:
+      game_slug: ${{ needs.get-metadata.outputs.game_name }}-${{ needs.get-metadata.outputs.version }}-${{ matrix.target.suffix }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.game_slug }}
+          path: ./
+      - name: Deploy build
+        uses: manleydev/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: ${{ matrix.target.channel }}
+          ITCH_GAME: ${{ secrets.ITCH_GAME }}
+          ITCH_USER: ${{ secrets.ITCH_USER }}
+          PACKAGE: ${{ env.game_slug }}.zip

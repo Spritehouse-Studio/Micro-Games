@@ -1,0 +1,3 @@
+[submodule "spritehouse_engine"]
+	path = spritehouse_engine
+	url = https://github.com/Spritehouse-Studio/Spritehouse-Engine.git
