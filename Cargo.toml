@@ -41,8 +41,6 @@ bevy = { version = "^0.15", default-features = false, features = [
   "wayland",
   "x11",
 ] }
-# https://github.com/bevyengine/bevy/issues/10425#issuecomment-1798598866
-blake3 = { version = "1.5", features = ["pure"] }
 spritehouse_engine = { path = "spritehouse_engine" }
 
 [profile.release]
