@@ -80,7 +80,7 @@ jobs:
       - name: Zip build
         run: |
           cd target/release
-          zip ${{ env.game_slug }}.zip $(find . -type f -name "${{ needs.get-metadata.outputs.game_name }}.*" | grep -P "^\.\/${{ needs.get-metadata.outputs.game_name }}(\.(exe|x86_64))?$")
+          zip ${{ env.game_slug }}.zip $(find . -type f -name "${{ needs.get-metadata.outputs.game_name }}*" | grep -P "^\.\/${{ needs.get-metadata.outputs.game_name }}(\.(exe|x86_64))?$")
       - name: Upload library artifact
         uses: actions/upload-artifact@v4
         with:
