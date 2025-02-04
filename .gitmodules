@@ -1,3 +1,6 @@
 [submodule "spritehouse_engine"]
 	path = spritehouse_engine
 	url = https://github.com/Spritehouse-Studio/Spritehouse-Engine.git
+[submodule "assets"]
+	path = assets
+	url = https://github.com/Spritehouse-Studio/Micro-Games-Assets.git
