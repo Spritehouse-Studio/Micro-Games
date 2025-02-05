@@ -9,10 +9,11 @@ keywords = ["game", "spritehouse", "bevy", "bevy-engine"]
 
 [dependencies]
 bevy = { version = "^0.15", default-features = false, features = [
+  "animation",
+  "asset_processor",
   "bevy_animation",
   "bevy_asset",
   "bevy_audio",
-  "bevy_ci_testing",
   "bevy_color",
   "bevy_core_pipeline",
   "bevy_dev_tools",

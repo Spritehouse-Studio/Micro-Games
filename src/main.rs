@@ -1,6 +1,6 @@
 //! Test game to showcase the capabilities of the Spritehouse Engine.
 
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 #![deny(
     bad_style,
     dead_code,
@@ -21,18 +21,15 @@
     unused_extern_crates,
     unused_import_braces,
     unused_qualifications,
-    unused_results,
     unused_parens,
     while_true
 )]
 
+pub mod game;
+
 use bevy::app::App;
-use spritehouse_engine::engine::EnginePlugin;
+use game::game::game::GamePlugin;
 
 fn main() {
-    _ = App::new()
-        .add_plugins(EnginePlugin {
-            game_name: "Micro Games".to_string(),
-        })
-        .run();
+    App::new().add_plugins(GamePlugin).run();
 }
